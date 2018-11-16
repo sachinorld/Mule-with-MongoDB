@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="0d2531c3-60e4-4649-942d-19d83396323d" basePath="/mongo" >
+		<http:listener-connection host="10.13.172.90" port="8081" />
+	</http:listener-config>
+	<mongo:config name="MongoDB_Config" doc:name="MongoDB Config" doc:id="37d63182-5f5c-4fe1-a806-c0764f3bc9cf" >
+		<mongo:connection host="10.13.172.90:27018" database="inventoryDB" />
+	</mongo:config>
+	<flow name="insertFlow" doc:id="c37ec1d5-dede-45ac-be2b-3bb4e0986af1" >
+		<http:listener doc:name="Listener" doc:id="17cb26db-1885-4d0d-b88d-48976156e711" config-ref="HTTP_Listener_config" path="/inventory/item" outputMimeType='application/json' allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="217333f9-7d92-4668-af2e-ade0a9f795f3" message="when method is POST #[attributes.method]" />
+		<set-variable value="#[payload.name]" doc:name="Set Variable" doc:id="744bd500-2694-4ba7-b6b9-6704c7c64d2c" variableName="item_name_var"/>
+		<logger level="INFO" doc:name="Logger" doc:id="cef46e5f-340f-4b43-8c2c-a2dc420f3dac" message="#[payload]" />
+		<mongo:insert-document collectionName="item" doc:name="Insert document" doc:id="66f5e0fc-9cd5-48d0-9d2f-cc034beffc5c" config-ref="MongoDB_Config" />
+		<set-variable value="#[vars.item_name_var]" doc:name="Set Variable" doc:id="662e0d25-5999-40c7-8e9c-b1b73e2e489e" variableName="success_msg"/>
+		<set-payload value='#[vars.success_msg]' doc:name="Set Payload" doc:id="fd3a7ad3-48d8-4dfd-aced-097618fd271e" mimeType="application/json"/>
+	</flow>
+</mule>

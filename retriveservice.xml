@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd">
+	<flow name="retriveserviceFlow" doc:id="52100429-0183-4a19-897c-87fdf5e8b767" >
+		<http:listener doc:name="Listener" doc:id="737de2b4-c684-47db-80c4-edcdad573b09" config-ref="HTTP_Listener_config" path="/inventory/item/find" allowedMethods="POST"/>
+		<logger level="INFO" doc:name="Logger" doc:id="75d94717-7976-4cc3-bd5b-d92aeea4df23" message="#[payload]"/>
+		<mongo:find-one-document collectionName="item" doc:name="Find one document" doc:id="59cc5044-0e3b-49ae-8436-198db1d1461f" config-ref="MongoDB_Config">
+			<mongo:find-query ><![CDATA[#[%dw 2.0
+output application/json skipNullOn = "everywhere"
+fun filterEmptyObjects
+(elem) = 
+	elem match {
+		case is Object -> if(isEmpty(elem)) null else elem mapObject($): filterEmptyObjects($)
+		case is Array -> elem map filterEmptyObjects($)
+		else -> elem
+	}
+---
+{
+	cateory: filterEmptyObjects(payload.cateory),
+	price: filterEmptyObjects(payload.price),
+	name: filterEmptyObjects(payload.name),
+	rating: filterEmptyObjects(payload.rating),
+	tags: filterEmptyObjects(payload.tags map ( tag , indexOfTag ) -> tag),
+	desc: filterEmptyObjects(payload.desc),
+	manufacturer: filterEmptyObjects(payload.manufacturer),
+	vendors: filterEmptyObjects(payload.vendors map (vendor, indexOfVendor) -> vendor),
+}]]]></mongo:find-query>
+		</mongo:find-one-document>
+		<logger level="INFO" doc:name="Document Logger" doc:id="9fc975e5-f5ce-4582-b45f-90956ecefb72" message="#[payload]"/>
+	</flow>
+</mule>
